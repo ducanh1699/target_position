@@ -24,7 +24,7 @@ class MarkerDetector():
 
         # self.cap = cv2.VideoCapture(0)
         # self.mtx = np.array([5.9778919413469134e+02, 0.0, 3.2893543056979632e+02, 0.0, 6.0031367126366081e+02, 2.4530312117189993e+02, 0.0, 0.0, 1.0]).reshape(3,3)
-        self.mtx = np.array([1376.25, 0.0, 952.502, 0.0, 1373.8, 553.372, 0.0, 0.0, 1.0]).reshape(3,3)
+        self.mtx = np.array([917.497, 0.0, 635.002, 0.0, 915.865, 368.915, 0.0, 0.0, 1.0]).reshape(3,3)
         self.dist = np.array([7.2697873963251586e-02, -1.4749282442847444e-01, -2.3233094539353212e-03, 8.9165121414591982e-03,-2.6332902664556002e-01])
         # matrix from imu to camera
         self.imu_cam = np.zeros((4,4), dtype=np.float)
@@ -49,7 +49,7 @@ class MarkerDetector():
         self.local_pos[2] = topic.pose.position.z
         
         # Orientation data
-        (r, p, y) = tr.euler_from_quaternion([topic.pose.orientation.x, topic.pose.orientation.y, topic.pose.orientation.z, topic.pose.orientation.w])
+        (r, p, y) = tr.euler_from_quaternion(topic.pose.orientation.x, topic.pose.orientation.y, topic.pose.orientation.z, topic.pose.orientation.w)
         self.local_pos[3] = y
 
     def marker_pose(self):
@@ -59,7 +59,7 @@ class MarkerDetector():
         device = pipeline_profile.get_device()
         device_product_line = str(device.get_info(rs.camera_info.product_line))
 
-        self.config.enable_stream(rs.stream.color, 1920, 1080, rs.format.bgr8, 30)
+        self.config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
         self.pipeline.start(self.config)
 
         # self.cap.set(3, 1280)
@@ -130,7 +130,7 @@ class MarkerDetector():
                     cv2.putText(frame, str_position0, (0, 50), self.font, 1, (0, 255, 0), 2, cv2.LINE_AA)
                 else:
                     # # change form
-                    rotMat = cv2.Rodrigues()
+                    rotMat = tr.eulerAnglesToRotationMatrix([0, 0, self.local_pos[3]])
                     rotMat = np.matmul(rotMat, self.imu_cam)
                     # rotMat = rotMat[0:3, 0:3]
                     tvec2 = np.matmul(rotMat, tvec1)
@@ -147,6 +147,8 @@ class MarkerDetector():
                     target_pos.pose.position.y = self.local_pos[1] + tvec2[1][0]
                     self.target_position.publish(target_pos)
 
+                    str_position0 = "Marker Position in Camera frame: x=%f  y=%f " % (tvec2[0][0], tvec2[1][0])
+                    cv2.putText(frame, str_position0, (0, 50), self.font, 1, (0, 255, 0), 2, cv2.LINE_AA)
                     check_err = np.linalg.norm([tvec2[0][0], tvec2[1][0]])
                     self.check_error_pos.publish(check_err)
                     self.rate.sleep()
@@ -162,3 +164,4 @@ if __name__ == '__main__':
         MD.marker_pose()
     except rospy.ROSInterruptException:
         pass
+
