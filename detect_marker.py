@@ -5,7 +5,7 @@ import numpy as np
 import cv2
 import sys
 
-from torch import double
+#from torch import double
 #import cv2.aruco as aruco
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
